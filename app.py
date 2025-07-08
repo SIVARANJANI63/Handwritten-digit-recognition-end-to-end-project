@@ -1,0 +1,33 @@
+from flask import Flask,request,render_template
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+import numpy as np
+from PIL import Image,ImageOps
+
+app=Flask(__name__)
+
+model=load_model('Hand_written.hdf5')
+
+
+def predict_digit(image):
+    image=ImageOps.grayscale(image)
+    image=ImageOps.invert(image)
+    image=image.resize((28,28))
+    image=np.array(image)/255
+    image=image.reshape(1,28,28,1)
+    return image
+
+
+@app.route('/',methods=['GET','POST'])
+def index():
+    if request.method=='POST':
+        file=request.files['file']
+        if file:
+            image=Image.open(file.stream)
+            image=predict_digit(image)
+            prediction=model.predict(image)
+            prediction_class=np.argmax(prediction)
+            return render_template('result.html',prediction_class=prediction_class)
+    return render_template('index.html')
+if __name__=='__main__':
+    app.run(debug=True,use_reloader=False)
